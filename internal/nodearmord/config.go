@@ -1,4 +1,4 @@
-package main
+package nodearmord
 
 import (
 	"fmt"
@@ -11,35 +11,35 @@ import (
 )
 
 const (
-	appName           = "nodearmor"
-	configFileName    = "settings"
-	defaultBackendURL = "https://api.nodearmor.net/"
+	appName              = "nodearmor"
+	configFileName       = "settings"
+	defaultControllerURL = "wss://api.nodearmor.net/"
 )
 
 // Config : global configuration store
-var Config = viper.New()
+var config = viper.New()
 
 // LoadConfig : initializes defaults and loads configuration from file if present
 func LoadConfig() {
 	// Config settings
-	Config.SetConfigType("json")
-	Config.SetConfigName(configFileName)
+	config.SetConfigType("json")
+	config.SetConfigName(configFileName)
 
 	// Config dirs
 	usr, err := user.Current()
 	configDir := filepath.Join(usr.HomeDir, fmt.Sprintf(".%s", appName))
 	_ = os.Mkdir(configDir, os.ModeDir)
-	Config.AddConfigPath(configDir)
+	config.AddConfigPath(configDir)
 
 	// Set defaults
-	Config.SetDefault("BackendURL", defaultBackendURL)
+	config.SetDefault("ControllerURL", defaultControllerURL)
 
-	err = Config.ReadInConfig()
+	err = config.ReadInConfig()
 	if err != nil {
 		log.Print("configuration file not found. Creating default.")
 
 		os.OpenFile(filepath.Join(configDir, fmt.Sprintf("%s.json", configFileName)), os.O_RDONLY|os.O_CREATE, 0666)
-		err = Config.WriteConfig()
+		err = config.WriteConfig()
 		if err != nil {
 			log.Printf("error creating default config file: %s", err)
 		}
@@ -48,7 +48,7 @@ func LoadConfig() {
 
 // WriteConfig : overwrites config file with current values
 func WriteConfig() {
-	err := Config.WriteConfig()
+	err := config.WriteConfig()
 	if err != nil {
 		log.Printf("error writing config file: %s", err)
 		return
