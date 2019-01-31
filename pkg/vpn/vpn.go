@@ -1,19 +1,8 @@
-package network
+package vpn
 
 import (
-	"io/ioutil"
 	"net"
-
-	"github.com/rs/zerolog"
 )
-
-var defaultLogger = zerolog.New(ioutil.Discard)
-var log = &defaultLogger
-
-// SetLogger : sets library logger
-func SetLogger(l *zerolog.Logger) {
-	log = l
-}
 
 // NodeConfig : a network node configuration
 type NodeConfig struct {
@@ -37,8 +26,8 @@ type NetworkConfig struct {
 	Routes []RouteConfig
 }
 
-// Network : controls network
-type Network interface {
+// VPN : vpn abstraction layer
+type VPN interface {
 	ID() string
 	Start() error
 	Stop() error
@@ -47,10 +36,10 @@ type Network interface {
 	GetPubKey() (string, error)
 }
 
-// Manager : controls networks
-type Manager interface {
+// VPNManager : controls creation of VPNs
+type VPNManager interface {
 	Type() string
-	CreateNetwork(id string) (*Network, error)
-	GetNetwork(id string) (*Network, error)
+	CreateNetwork(id string) (VPN, error)
+	GetNetwork(id string) (VPN, error)
 	DeleteNetwork(id string) error
 }

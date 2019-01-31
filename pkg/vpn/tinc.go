@@ -1,4 +1,4 @@
-package network
+package vpn
 
 import (
 	"bufio"
@@ -27,18 +27,18 @@ const (
 	pubKeyFile            = "rsa_key.pub"
 )
 
-// TINCNetwork : TINC network object that controlls the tinc daemon
-type TINCNetwork struct {
+// TincVPN : TINC network object that controlls the tinc daemon
+type TincVPN struct {
 	id string
 }
 
 // ID : returns TINC network id
-func (n *TINCNetwork) ID() string {
+func (n *TincVPN) ID() string {
 	return n.id
 }
 
 // Start : creates systemd service, enables it, and starts daemon
-func (n *TINCNetwork) Start() error {
+func (n *TincVPN) Start() error {
 	err := n.serviceCreate()
 	if err != nil {
 		return err
@@ -58,7 +58,7 @@ func (n *TINCNetwork) Start() error {
 }
 
 // Stop : stops systemd service and removes from startup
-func (n *TINCNetwork) Stop() error {
+func (n *TincVPN) Stop() error {
 	err := n.serviceStop()
 	if err != nil {
 		return err
@@ -73,7 +73,7 @@ func (n *TINCNetwork) Stop() error {
 }
 
 // Reload : reloads TINC network configuration
-func (n *TINCNetwork) Reload() error {
+func (n *TincVPN) Reload() error {
 	err := n.serviceReload()
 	if err != nil {
 		return err
@@ -83,7 +83,7 @@ func (n *TINCNetwork) Reload() error {
 }
 
 // SetConfig : sets tinc network configuration
-func (n *TINCNetwork) SetConfig(config NetworkConfig) error {
+func (n *TincVPN) SetConfig(config NetworkConfig) error {
 	// Remove old hosts if exist
 	err := os.RemoveAll(n.hostConfigPath())
 	if err != nil {
@@ -116,7 +116,7 @@ func (n *TINCNetwork) SetConfig(config NetworkConfig) error {
 	return nil
 }
 
-func (n *TINCNetwork) writeNetworkConfg(selfID string, connectIds []string) error {
+func (n *TincVPN) writeNetworkConfg(selfID string, connectIds []string) error {
 	filePath := path.Join(n.networkConfigPath(), networkConfigFile)
 
 	file, err := os.OpenFile(
@@ -143,7 +143,7 @@ func (n *TINCNetwork) writeNetworkConfg(selfID string, connectIds []string) erro
 	return nil
 }
 
-func (n *TINCNetwork) writeNetworkUpScript(ips []net.IPNet, routes []RouteConfig) error {
+func (n *TincVPN) writeNetworkUpScript(ips []net.IPNet, routes []RouteConfig) error {
 	filePath := path.Join(n.networkConfigPath(), networkUpScriptFile)
 
 	file, err := os.OpenFile(
@@ -182,7 +182,7 @@ func (n *TINCNetwork) writeNetworkUpScript(ips []net.IPNet, routes []RouteConfig
 	return nil
 }
 
-func (n *TINCNetwork) writeNetworkDownScript(ips []net.IPNet, routes []RouteConfig) error {
+func (n *TincVPN) writeNetworkDownScript(ips []net.IPNet, routes []RouteConfig) error {
 	filePath := path.Join(n.networkConfigPath(), networkDownScriptFile)
 
 	file, err := os.OpenFile(
@@ -221,7 +221,7 @@ func (n *TINCNetwork) writeNetworkDownScript(ips []net.IPNet, routes []RouteConf
 	return nil
 }
 
-func (n *TINCNetwork) writeHostConfig(id string, privateIPs []net.IPNet, publicIPs []net.IP, pubkey string) error {
+func (n *TincVPN) writeHostConfig(id string, privateIPs []net.IPNet, publicIPs []net.IP, pubkey string) error {
 	filePath := path.Join(n.hostConfigPath(), id)
 
 	// Open a new file for writing only
@@ -255,7 +255,7 @@ func (n *TINCNetwork) writeHostConfig(id string, privateIPs []net.IPNet, publicI
 	return nil
 }
 
-func (n *TINCNetwork) GetPubKey() (string, error) {
+func (n *TincVPN) GetPubKey() (string, error) {
 	var pubKeyPath = path.Join(n.networkConfigPath(), pubKeyFile)
 
 	// Check if key exists
@@ -276,7 +276,7 @@ func (n *TINCNetwork) GetPubKey() (string, error) {
 	return string(buf), nil
 }
 
-func (n *TINCNetwork) generateKeys() error {
+func (n *TincVPN) generateKeys() error {
 	var privKeyPath = path.Join(n.networkConfigPath(), privKeyFile)
 	var pubKeyPath = path.Join(n.networkConfigPath(), pubKeyFile)
 
@@ -344,23 +344,23 @@ func (n *TINCNetwork) generateKeys() error {
 	return nil
 }
 
-func (n *TINCNetwork) serviceName() string {
+func (n *TincVPN) serviceName() string {
 	return fmt.Sprintf("%s%s", servicePrefix, n.id)
 }
 
-func (n *TINCNetwork) serviceFile() string {
+func (n *TincVPN) serviceFile() string {
 	return path.Join(serviceFilePath, fmt.Sprintf("%s.service", n.serviceName()))
 }
 
-func (n *TINCNetwork) networkConfigPath() string {
+func (n *TincVPN) networkConfigPath() string {
 	return path.Join(configPath, n.id)
 }
 
-func (n *TINCNetwork) hostConfigPath() string {
+func (n *TincVPN) hostConfigPath() string {
 	return path.Join(n.networkConfigPath(), "hosts")
 }
 
-func (n *TINCNetwork) serviceCreate() error {
+func (n *TincVPN) serviceCreate() error {
 	// Open a new file for writing only
 	file, err := os.OpenFile(
 		n.serviceFile(),
@@ -392,7 +392,7 @@ func (n *TINCNetwork) serviceCreate() error {
 	return nil
 }
 
-func (n *TINCNetwork) serviceRemove() error {
+func (n *TincVPN) serviceRemove() error {
 	err := os.Remove(n.serviceFile())
 	if err != nil {
 		return fmt.Errorf("Error removing service file %s: %s", n.serviceFile(), err)
@@ -401,7 +401,7 @@ func (n *TINCNetwork) serviceRemove() error {
 	return nil
 }
 
-func (n *TINCNetwork) serviceStart() error {
+func (n *TincVPN) serviceStart() error {
 	cmd := exec.Command("systemctl", "start", n.serviceName())
 	_, err := cmd.CombinedOutput()
 	if err != nil {
@@ -411,7 +411,7 @@ func (n *TINCNetwork) serviceStart() error {
 	return nil
 }
 
-func (n *TINCNetwork) serviceStop() error {
+func (n *TincVPN) serviceStop() error {
 	cmd := exec.Command("systemctl", "stop", n.serviceName())
 	_, err := cmd.CombinedOutput()
 	if err != nil {
@@ -421,7 +421,7 @@ func (n *TINCNetwork) serviceStop() error {
 	return nil
 }
 
-func (n *TINCNetwork) serviceReload() error {
+func (n *TincVPN) serviceReload() error {
 	cmd := exec.Command("systemctl", "kill", "-s", "HUP", n.serviceName())
 	_, err := cmd.CombinedOutput()
 	if err != nil {
@@ -431,7 +431,7 @@ func (n *TINCNetwork) serviceReload() error {
 	return nil
 }
 
-func (n *TINCNetwork) serviceEnable() error {
+func (n *TincVPN) serviceEnable() error {
 	cmd := exec.Command("systemctl", "enable", n.serviceName())
 	_, err := cmd.CombinedOutput()
 	if err != nil {
@@ -441,7 +441,7 @@ func (n *TINCNetwork) serviceEnable() error {
 	return nil
 }
 
-func (n *TINCNetwork) serviceDisable() error {
+func (n *TincVPN) serviceDisable() error {
 	cmd := exec.Command("systemctl", "disable", n.serviceName())
 	_, err := cmd.CombinedOutput()
 	if err != nil {
@@ -451,16 +451,16 @@ func (n *TINCNetwork) serviceDisable() error {
 	return nil
 }
 
-// TINCManager : manages TINC networks
-type TINCManager struct{}
+// TincVPNManager : manages TINC networks
+type TincVPNManager struct{}
 
 // Type : returns network type "tinc"
-func (d *TINCManager) Type() string {
+func (d *TincVPNManager) Type() string {
 	return "tinc"
 }
 
 // CreateNetwork : creates configuration folder for TINC network and returns network pointer
-func (d *TINCManager) CreateNetwork(id string) (*TINCNetwork, error) {
+func (d *TincVPNManager) CreateNetwork(id string) (VPN, error) {
 	networkConfigPath := path.Join(configPath, id)
 
 	if _, err := os.Stat(networkConfigPath); !os.IsNotExist(err) {
@@ -470,26 +470,26 @@ func (d *TINCManager) CreateNetwork(id string) (*TINCNetwork, error) {
 	// Create directory
 	os.MkdirAll(networkConfigPath, 0755)
 
-	return &TINCNetwork{
+	return &TincVPN{
 		id: id,
 	}, nil
 }
 
 // GetNetwork : finds TINC network pointer based on network id
-func (d *TINCManager) GetNetwork(id string) (*TINCNetwork, error) {
+func (d *TincVPNManager) GetNetwork(id string) (VPN, error) {
 	networkConfigPath := path.Join(configPath, id)
 
 	if _, err := os.Stat(networkConfigPath); os.IsNotExist(err) {
 		return nil, fmt.Errorf("Network %s does not exist", id)
 	}
 
-	return &TINCNetwork{
+	return &TincVPN{
 		id: id,
 	}, nil
 }
 
 // DeleteNetwork : stops and removes TINC network
-func (d *TINCManager) DeleteNetwork(id string) error {
+func (d *TincVPNManager) DeleteNetwork(id string) error {
 	network, err := d.GetNetwork(id)
 	if err != nil {
 		return fmt.Errorf("Error deleting network %s: %s", id, err)

@@ -13,7 +13,22 @@ import (
 
 type signalCh chan os.Signal
 
-var ctrl controller.Controller
+var ctrlTransport controller.WebsocketTransport
+var ctrl = controller.NewJsonAPI(&ctrlTransport)
+
+func RunController(wg *sync.WaitGroup, stop chan os.Signal) {
+	wg.Add(1)
+
+	go func() {
+		<-stop
+		ctrlTransport.Disconnect()
+	}()
+
+	go func() {
+		defer wg.Done()
+		ctrl.Run()
+	}()
+}
 
 func Run() {
 	// Bind os signals to stop channel
@@ -26,20 +41,20 @@ func Run() {
 
 	// Setup logs
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stdout})
-	controllerLog := log.With().Str("component", "controller").Logger()
-	controller.SetLogger(&controllerLog)
 
 	LoadConfig()
 
-	err := ctrl.Connect(config.GetString("ControllerURL"))
+	err := ctrlTransport.Connect(config.GetString("ControllerURL"))
 	if err != nil {
 		log.Fatal().Err(err).Msg("Controller connection failed")
 	}
 
-	// Begin processing controller messages
-	ctrl.Start(wg, stop)
-
+	// Begin processing controller
+	RunController(&wg, stop)
+	// Start RPC server
 	StartRPCServer(&wg, stop)
+
+	ctrl.Init()
 
 	// Wait for all goroutines
 	wg.Wait()
